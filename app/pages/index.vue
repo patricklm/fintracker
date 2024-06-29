@@ -10,4 +10,34 @@ const selectedView = ref(transactionViewOptions[1]);
       <USelectMenu :options="transactionViewOptions" v-model="selectedView" />
     </div>
   </section>
+  <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-16 mb-10">
+    <Trend
+      color="green"
+      title="Income"
+      :amount="4000"
+      :last-amount="2500"
+      :loading="false"
+    />
+    <Trend
+      color="red"
+      title="Income"
+      :amount="4000"
+      :last-amount="2500"
+      :loading="false"
+    />
+    <Trend
+      color="green"
+      title="Income"
+      :amount="4000"
+      :last-amount="2500"
+      :loading="false"
+    />
+    <Trend
+      color="red"
+      title="Income"
+      :amount="4000"
+      :last-amount="2500"
+      :loading="true"
+    />
+  </section>
 </template>
