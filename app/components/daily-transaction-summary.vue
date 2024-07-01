@@ -1,54 +1,34 @@
 <script setup>
 const props = defineProps({
-  transaction: Object,
+  date: String,
+  transactions: Array,
 });
-const isIncome = computed(() => props.transaction.type === 'Income');
-const icon = computed(() =>
-  isIncome.value ? 'i-heroicons-arrow-up-right' : 'i-heroicons-arrow-down-left'
-);
 
-const iconColor = computed(() =>
-  isIncome.value ? 'text-green-600' : 'text-red-600'
-);
-const { currency } = useCurrency(props.transaction.amount);
-const items = [
-  [
-    {
-      label: 'Edit',
-      icon: 'i-heroicons-pencil-square-20-solid',
-      click: () => console.log('Edit'),
-    },
-    {
-      label: 'Delete',
-      icon: 'i-heroicons-trash-20-solid',
-      click: () => console.log('Delete'),
-    },
-  ],
-];
+const sum = computed(() => {
+  let sum = 0;
+  for (const transaction of props.transactions) {
+    if (transaction.type === 'Income') {
+      sum += transaction.amount;
+    } else {
+      sum -= transaction.amount;
+    }
+  }
+
+  return sum;
+});
+
+const { currency } = useCurrency(sum);
 </script>
 
 <template>
   <div
-    class="grid grid-cols-2 py-4 border-b border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100"
+    class="grid grid-cols-2 py-4 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-extrabold"
   >
     <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-1">
-        <UIcon :name="icon" :class="[iconColor]" />
-        <div>{{ transaction.description }}</div>
-      </div>
-      <UBadge v-if="transaction.category">{{ transaction.category }}</UBadge>
+      {{ date }}
     </div>
-    <div class="flex items-center justify-end">
-      <div>{{ currency }}</div>
-      <div>
-        <UDropdown :items="items" :popper="{ placement: 'bottom-end' }">
-          <UButton
-            color="white"
-            variant="ghost"
-            trailing-icon="i-heroicons-ellipsis-horizontal"
-          />
-        </UDropdown>
-      </div>
+    <div class="flex items-center justify-end mr-10">
+      {{ currency }}
     </div>
   </div>
 </template>
