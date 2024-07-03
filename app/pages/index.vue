@@ -4,14 +4,25 @@ const selectedView = ref(transactionViewOptions[1]);
 
 const supababse = useSupabaseClient();
 const transactions = ref([]);
+const isLoading = ref(false);
 
-const { data, pending } = await useAsyncData('transactions', async () => {
-  const { data, error } = await supababse.from('transactions').select();
-  return error ? [] : data;
-});
+const fetchTransactions = async () => {
+  isLoading.value = true;
+  try {
+    const { data } = await useAsyncData('transactions', async () => {
+      const { data, error } = await supababse.from('transactions').select();
+      return error ? [] : data;
+    });
 
-console.log(data.value);
-transactions.value = data.value;
+    return data.value;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const refreshTransactions = async () =>
+  (transactions.value = await fetchTransactions());
+await refreshTransactions();
 
 const transactionsGroupedByDate = computed(() => {
   let grouped = {};
@@ -45,31 +56,31 @@ console.log(transactionsGroupedByDate.value);
         title="Income"
         :amount="42000"
         :last-amount="35500"
-        :loading="false"
+        :loading="isLoading"
       />
       <Trend
         color="red"
         title="Expense"
         :amount="13500"
         :last-amount="15500"
-        :loading="false"
+        :loading="isLoading"
       />
       <Trend
         color="green"
         title="Investment"
         :amount="46000"
         :last-amount="25000"
-        :loading="false"
+        :loading="isLoading"
       />
       <Trend
         color="red"
         title="Saving"
         :amount="15000"
         :last-amount="10000"
-        :loading="false"
+        :loading="isLoading"
       />
     </section>
-    <section>
+    <section v-if="!isLoading">
       <div
         v-for="(transactionsOnDay, date) in transactionsGroupedByDate"
         :key="date"
@@ -83,8 +94,12 @@ console.log(transactionsGroupedByDate.value);
           v-for="transaction in transactionsOnDay"
           :key="transaction.id"
           :transaction="transaction"
+          @deleted="refreshTransactions()"
         />
       </div>
+    </section>
+    <section v-else>
+      <USkeleton v-for="i in 4" :key="i" class="h-8 w-full mb-2" />
     </section>
   </div>
 </template>
