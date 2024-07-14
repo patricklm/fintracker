@@ -30,7 +30,10 @@ const fetchTransactions = async () => {
   isLoading.value = true;
   try {
     const { data } = await useAsyncData('transactions', async () => {
-      const { data, error } = await supababse.from('transactions').select();
+      const { data, error } = await supababse
+        .from('transactions')
+        .select()
+        .order('created_at', { ascending: false });
       return error ? [] : data;
     });
 
@@ -56,8 +59,6 @@ const transactionsGroupedByDate = computed(() => {
   }
   return grouped;
 });
-
-console.log(transactionsGroupedByDate.value);
 </script>
 
 <template>
@@ -109,7 +110,7 @@ console.log(transactionsGroupedByDate.value);
         </div>
       </div>
       <div>
-        <TransactionModal v-model="isOpen" />
+        <TransactionModal v-model="isOpen" @saved="refreshTransactions()" />
 
         <UButton
           icon="i-heroicons-plus-circle"
