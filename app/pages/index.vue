@@ -1,64 +1,33 @@
 <script setup>
+import { useSelectedTimePeriod } from '~/composables/use-selected-time-period';
 import { transactionViewOptions } from '~/constants';
-const selectedView = ref(transactionViewOptions[1]);
 
-const supababse = useSupabaseClient();
-const transactions = ref([]);
-const isLoading = ref(false);
+const selectedView = ref(transactionViewOptions[0]);
+const { current, previous } = useSelectedTimePeriod(selectedView);
+
 const isOpen = ref(false);
 
-const income = computed(() =>
-  transactions.value.filter((t) => t.type === 'Income')
-);
-const expense = computed(() =>
-  transactions.value.filter((t) => t.type === 'Expense')
-);
+const {
+  pending,
+  refresh,
+  transactions: {
+    incomeCount,
+    expenseCount,
+    incomeTotal,
+    expenseTotal,
+    grouped: { byDate },
+  },
+} = useFetchTransactions(current);
 
-const incomeCount = computed(() => income.value.length);
+const {
+  refresh: refreshPrevious,
+  transactions: {
+    incomeTotal: prevIncomeTotal,
+    expenseTotal: prevExpenseTotal,
+  },
+} = useFetchTransactions(previous);
 
-const expenseCount = computed(() => expense.value.length);
-
-const incomeTotal = computed(() =>
-  income.value.reduce((sum, transaction) => sum + transaction.amount, 0)
-);
-
-const expenseTotal = computed(() =>
-  expense.value.reduce((sum, transaction) => sum + transaction.amount, 0)
-);
-
-const fetchTransactions = async () => {
-  isLoading.value = true;
-  try {
-    const { data } = await useAsyncData('transactions', async () => {
-      const { data, error } = await supababse
-        .from('transactions')
-        .select()
-        .order('created_at', { ascending: false });
-      return error ? [] : data;
-    });
-
-    return data.value;
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const refreshTransactions = async () =>
-  (transactions.value = await fetchTransactions());
-await refreshTransactions();
-
-const transactionsGroupedByDate = computed(() => {
-  let grouped = {};
-  for (const transaction of transactions.value) {
-    const date = new Date(transaction.created_at).toISOString().split('T')[0];
-
-    if (!grouped[date]) {
-      grouped[date] = [];
-    }
-    grouped[date].push(transaction);
-  }
-  return grouped;
-});
+await Promise.all([refresh(), refreshPrevious()]);
 </script>
 
 <template>
@@ -76,29 +45,29 @@ const transactionsGroupedByDate = computed(() => {
         color="green"
         title="Income"
         :amount="incomeTotal"
-        :last-amount="35500"
-        :loading="isLoading"
+        :last-amount="prevIncomeTotal"
+        :loading="pending"
       />
       <Trend
         color="red"
         title="Expense"
         :amount="expenseTotal"
-        :last-amount="15500"
-        :loading="isLoading"
+        :last-amount="prevExpenseTotal"
+        :loading="pending"
       />
       <Trend
         color="green"
         title="Investment"
         :amount="46000"
         :last-amount="25000"
-        :loading="isLoading"
+        :loading="pending"
       />
       <Trend
         color="red"
         title="Saving"
         :amount="15000"
         :last-amount="10000"
-        :loading="isLoading"
+        :loading="pending"
       />
     </section>
     <section class="flex justify-between mb-10">
@@ -110,7 +79,7 @@ const transactionsGroupedByDate = computed(() => {
         </div>
       </div>
       <div>
-        <TransactionModal v-model="isOpen" @saved="refreshTransactions()" />
+        <TransactionModal v-model="isOpen" @saved="refresh()" />
 
         <UButton
           icon="i-heroicons-plus-circle"
@@ -121,9 +90,9 @@ const transactionsGroupedByDate = computed(() => {
         />
       </div>
     </section>
-    <section v-if="!isLoading">
+    <section v-if="!pending">
       <div
-        v-for="(transactionsOnDay, date) in transactionsGroupedByDate"
+        v-for="(transactionsOnDay, date) in byDate"
         :key="date"
         class="mb-10"
       >
@@ -135,7 +104,7 @@ const transactionsGroupedByDate = computed(() => {
           v-for="transaction in transactionsOnDay"
           :key="transaction.id"
           :transaction="transaction"
-          @deleted="refreshTransactions()"
+          @deleted="refresh()"
         />
       </div>
     </section>

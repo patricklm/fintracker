@@ -1,5 +1,5 @@
 <script setup>
-import { useCurrency } from '~/composables/useCurrency';
+import { useCurrency } from '~/composables/use-currency';
 
 const props = defineProps({
   title: String,
@@ -8,8 +8,8 @@ const props = defineProps({
   color: String,
   loading: Boolean,
 });
-
-const { currency } = useCurrency(props.amount);
+const {amount} = toRefs(props)
+const { currency } = useCurrency(amount);
 
 const trendingUp = computed(() => props.amount >= props.lastAmount);
 
